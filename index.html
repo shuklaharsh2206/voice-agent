@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceDesk — AI Customer Support</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F0F2FA;--white:#fff;--indigo:#1E1B4B;--violet:#6D28D9;--violet-l:#EDE9FE;--violet-m:#8B5CF6;--green:#059669;--green-l:#ECFDF5;--red:#DC2626;--red-l:#FEF2F2;--muted:#6B7280;--muted2:#9CA3AF;--border:rgba(30,27,75,0.1);--shadow:0 2px 8px rgba(30,27,75,0.08),0 12px 32px rgba(30,27,75,0.06);--shadow-lg:0 4px 16px rgba(30,27,75,0.1),0 24px 56px rgba(30,27,75,0.12)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--indigo);overflow:hidden}
+.screen{display:none;height:100vh;overflow-y:auto}
+.screen.active{display:flex}
+
+/* SETUP */
+#setup-screen{align-items:center;justify-content:center;background:linear-gradient(135deg,#F0F2FA,#E8E6F8);padding:2rem}
+.setup-card{background:var(--white);border:1px solid var(--border);border-radius:24px;padding:3rem;width:100%;max-width:500px;box-shadow:var(--shadow-lg)}
+.setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:var(--violet);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.logo-name{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--indigo)}
+.setup-h{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--indigo);margin-bottom:.4rem}
+.setup-sub{font-size:14px;color:var(--muted);margin-bottom:2rem;line-height:1.6}
+.form-grp{margin-bottom:1.25rem}
+.form-lbl{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.form-inp{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--indigo);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s}
+.form-inp:focus{border-color:var(--violet-m);box-shadow:0 0 0 3px rgba(109,40,217,.1)}
+.form-inp::placeholder{color:var(--muted2)}
+textarea.form-inp{resize:vertical;min-height:130px;line-height:1.6}
+.form-hint{font-size:11px;color:var(--muted2);margin-top:5px;line-height:1.5}
+.btn-launch{width:100%;padding:14px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:.5rem;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-launch:hover{background:var(--indigo);transform:translateY(-1px);box-shadow:0 8px 24px rgba(109,40,217,.3)}
+.setup-note{text-align:center;font-size:12px;color:var(--muted2);margin-top:1.25rem}
+
+/* AGENT */
+#agent-screen{flex-direction:row;height:100vh;overflow:hidden}
+.sidebar{width:270px;flex-shrink:0;background:var(--indigo);display:flex;flex-direction:column;padding:1.5rem;overflow-y:auto}
+.sb-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.sb-icon{width:32px;height:32px;border-radius:9px;background:var(--violet-m);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.sb-name{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#fff}
+.sb-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.6rem}
+.sb-company{font-size:15px;font-weight:600;color:#fff;margin-bottom:4px}
+.sb-online{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.4)}
+.online-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1.5rem 0}
+.sb-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.75rem}
+.sb-stat-n{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#fff;line-height:1;margin-bottom:2px}
+.sb-stat-l{font-size:10px;color:rgba(255,255,255,.35)}
+.sb-div{height:1px;background:rgba(255,255,255,.08);margin:1rem 0}
+.sb-faq-h{font-size:11px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:.75rem}
+.faq-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;font-size:12px;color:rgba(255,255,255,.55);margin-bottom:6px;cursor:pointer;transition:all .2s;line-height:1.4}
+.faq-chip:hover{background:rgba(109,40,217,.3);border-color:rgba(109,40,217,.4);color:#fff}
+.sb-foot{margin-top:auto}
+.btn-reset{width:100%;padding:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:rgba(255,255,255,.45);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.btn-reset:hover{background:rgba(255,255,255,.1);color:#fff}
+
+.main-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{height:60px;flex-shrink:0;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-avatar{width:36px;height:36px;border-radius:50%;background:var(--violet-l);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.tb-name{font-weight:600;font-size:15px;color:var(--indigo)}
+.tb-model{font-size:11px;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:1rem}
+.voice-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.toggle{width:36px;height:20px;border-radius:99px;background:var(--violet);position:relative;transition:background .2s;flex-shrink:0}
+.toggle.off{background:#D1D5DB}
+.toggle-k{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle:not(.off) .toggle-k{transform:translateX(16px)}
+.chrome-badge{font-size:11px;padding:3px 10px;border-radius:99px;background:var(--violet-l);color:var(--violet);font-weight:500}
+
+.chat-area{flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.25rem}
+.chat-area::-webkit-scrollbar{width:4px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+.welcome{text-align:center;padding:2rem 1rem}
+.welcome-icon{font-size:3rem;margin-bottom:1rem}
+.welcome-h{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--indigo);margin-bottom:.5rem}
+.welcome-p{font-size:14px;color:var(--muted);max-width:380px;margin:0 auto 1.5rem;line-height:1.6}
+.quick-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.q-chip{background:var(--white);border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:13px;color:var(--indigo);cursor:pointer;transition:all .2s;box-shadow:var(--shadow)}
+.q-chip:hover{background:var(--violet-l);border-color:rgba(109,40,217,.2);color:var(--violet)}
+
+.msg{display:flex;gap:10px;max-width:80%;animation:pop .3s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;margin-top:2px}
+.msg.agent .msg-av{background:var(--violet-l)}
+.msg.user .msg-av{background:var(--indigo)}
+.msg-bub{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.6}
+.msg.agent .msg-bub{background:var(--white);color:var(--indigo);border:1px solid var(--border);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+.msg.user .msg-bub{background:var(--violet);color:#fff;border-bottom-right-radius:6px}
+.msg-time{font-size:10px;color:var(--muted2);margin-top:4px}
+.msg.user .msg-time{text-align:right}
+.dots{display:flex;gap:4px;padding:4px 0;align-items:center}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--muted2);animation:bounce 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.controls{flex-shrink:0;padding:1.5rem 2rem;background:var(--white);border-top:1px solid var(--border)}
+.no-voice{background:#FEF3C7;border:1px solid rgba(217,119,6,.25);border-radius:10px;padding:10px 14px;font-size:13px;color:#92400E;display:none;margin-bottom:1rem}
+.status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.status-badge{font-size:12px;padding:4px 12px;border-radius:99px;font-weight:500}
+.s-idle{background:var(--bg);color:var(--muted)}
+.s-listen{background:var(--red-l);color:var(--red)}
+.s-think{background:var(--violet-l);color:var(--violet)}
+.s-speak{background:var(--green-l);color:var(--green)}
+.voice-row{display:flex;align-items:center;gap:1rem}
+.mic{width:60px;height:60px;border-radius:50%;background:var(--violet);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.5rem;transition:all .2s;flex-shrink:0;box-shadow:0 4px 16px rgba(109,40,217,.3);position:relative}
+.mic:hover{transform:scale(1.05)}
+.mic.on{background:var(--red);animation:pulse .9s ease-in-out infinite;box-shadow:0 4px 16px rgba(220,38,38,.4)}
+.mic.speak{background:var(--green);box-shadow:0 4px 16px rgba(5,150,105,.4)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.mic-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(220,38,38,.3);animation:ring 1s ease-out infinite;opacity:0}
+.mic.on .mic-ring{opacity:1}
+@keyframes ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+.voice-info{flex:1;min-width:0}
+.v-status{font-size:14px;font-weight:600;color:var(--indigo);margin-bottom:3px}
+.v-hint{font-size:12px;color:var(--muted)}
+.v-live{font-size:13px;color:var(--violet);font-style:italic;margin-top:4px;min-height:18px}
+.text-row{display:flex;gap:10px;margin-top:1rem}
+.text-inp{flex:1;padding:11px 16px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--indigo);background:var(--bg);outline:none;transition:border-color .2s}
+.text-inp:focus{border-color:var(--violet-m)}
+.text-inp::placeholder{color:var(--muted2)}
+.btn-send{padding:11px 22px;background:var(--violet);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-send:hover{background:var(--indigo)}
+@media(max-width:700px){.sidebar{display:none}.msg{max-width:95%}}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <div class="logo-icon">🎙️</div>
+      <span class="logo-name">VoiceDesk</span>
+    </div>
+    <h1 class="setup-h">Configure your<br>support agent</h1>
+    <p class="setup-sub">Set up your AI voice agent in 30 seconds. No coding needed.</p>
+
+    <div class="form-grp">
+      <label class="form-lbl">Company / Bot Name</label>
+      <input class="form-inp" id="inp-company" type="text" placeholder="e.g. Hagerstone Support">
+    </div>
+
+    <div class="form-grp">
+      <label class="form-lbl">FAQ / Knowledge Base</label>
+      <textarea class="form-inp" id="inp-faq">Q: What services do you offer?
+A: We offer interior design, MEP, PEB construction, and civil work across 25+ cities in India.
+
+Q: How long does a project take?
+A: Our record is 10,000 sqft in 21 days. Projects are completed 40% faster than industry average.
+
+Q: Are you ISO certified?
+A: Yes, ISO certified with 11+ years experience and 500+ completed projects.
+
+Q: How much does it cost?
+A: Transparent pricing, no hidden charges. Contact us for a free quote.
+
+Q: Which cities do you serve?
+A: 25+ cities across India including Delhi NCR, Mumbai, Bangalore, Chennai and more.
+
+Q: How do I get started?
+A: Ask this assistant to connect you with our team, or visit our website for a free consultation.</textarea>
+      <div class="form-hint">Write in Q: / A: format. Agent uses this to answer customer questions.</div>
+    </div>
+
+    <button class="btn-launch" onclick="launch()">🚀 Launch Agent</button>
+    <div class="setup-note">⚡ Voice input works best in Chrome or Edge</div>
+  </div>
+</div>
+
+<!-- AGENT SCREEN -->
+<div id="agent-screen" class="screen">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-icon">🎙️</div>
+      <span class="sb-name">VoiceDesk</span>
+    </div>
+    <div style="margin-bottom:1.5rem">
+      <div class="sb-lbl">Agent</div>
+      <div class="sb-company" id="sb-company">Support Agent</div>
+      <div class="sb-online"><div class="online-dot"></div><span>Online · Groq AI</span></div>
+    </div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-n" id="stat-msgs">0</div><div class="sb-stat-l">Messages</div></div>
+      <div class="sb-stat"><div class="sb-stat-n" id="stat-time">0m</div><div class="sb-stat-l">Session</div></div>
+    </div>
+    <div class="sb-div"></div>
+    <div style="flex:1">
+      <div class="sb-faq-h">Quick Questions</div>
+      <div id="faq-chips"></div>
+    </div>
+    <div class="sb-foot">
+      <button class="btn-reset" onclick="reset()">⚙ Reconfigure</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="tb-avatar">🤖</div>
+        <div>
+          <div class="tb-name" id="tb-name">AI Support</div>
+          <div class="tb-model">llama-3.1-8b-instant · Groq</div>
+        </div>
+      </div>
+      <div class="tb-right">
+        <span class="chrome-badge">Chrome for Voice</span>
+        <div class="voice-toggle" onclick="toggleTTS()">
+          <span>Voice Output</span>
+          <div class="toggle" id="tts-toggle"><div class="toggle-k"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chat"></div>
+
+    <div class="controls">
+      <div class="no-voice" id="no-voice">⚠️ Voice not supported here. Use Chrome or Edge. Typing works fine.</div>
+      <div class="status-row">
+        <span class="status-badge s-idle" id="badge">Ready</span>
+      </div>
+      <div class="voice-row">
+        <button class="mic" id="mic" onclick="toggleMic()">
+          <div class="mic-ring"></div>
+          <span id="mic-icon">🎤</span>
+        </button>
+        <div class="voice-info">
+          <div class="v-status" id="v-status">Tap mic to speak</div>
+          <div class="v-hint" id="v-hint">Or type your question below</div>
+          <div class="v-live" id="v-live"></div>
+        </div>
+      </div>
+      <div class="text-row">
+        <input class="text-inp" id="text-inp" placeholder="Type your question here..." onkeydown="if(event.key==='Enter')send()">
+        <button class="btn-send" onclick="send()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// STATE
+let cfg = { company: '', faq: '', tts: true };
+let listening = false, recog = null, msgs = 0, startTime = null, timer = null;
+let history = [];
+
+// LAUNCH
+function launch() {
+  const company = document.getElementById('inp-company').value.trim() || 'Support Agent';
+  const faq = document.getElementById('inp-faq').value.trim();
+  cfg = { company, faq, tts: true };
+  localStorage.setItem('vd', JSON.stringify(cfg));
+  startAgent();
+}
+
+function reset() {
+  stopMic(); window.speechSynthesis.cancel(); clearInterval(timer);
+  document.getElementById('setup-screen').classList.add('active');
+  document.getElementById('agent-screen').classList.remove('active');
+}
+
+// INIT AGENT
+function startAgent() {
+  document.getElementById('setup-screen').classList.remove('active');
+  document.getElementById('agent-screen').classList.add('active');
+  document.getElementById('sb-company').textContent = cfg.company;
+  document.getElementById('tb-name').textContent = cfg.company + ' Agent';
+  buildChips(); setupRecog(); startTimer(); history = []; msgs = 0; updateStats();
+
+  // Welcome
+  const ca = document.getElementById('chat');
+  ca.innerHTML = `
+    <div class="welcome">
+      <div class="welcome-icon">🎙️</div>
+      <div class="welcome-h">Hi! I'm ${esc(cfg.company)}'s AI assistant.</div>
+      <div class="welcome-p">Tap the mic and speak, or type your question below. I'll answer instantly.</div>
+      <div class="quick-chips" id="quick-chips"></div>
+    </div>`;
+  buildQuickChips();
+}
+
+function buildChips() {
+  const lines = cfg.faq.split('\n').filter(l => l.startsWith('Q:'));
+  const qs = lines.map(l => l.replace('Q:', '').trim()).slice(0, 6);
+  const sc = document.getElementById('faq-chips');
+  sc.innerHTML = '';
+  qs.forEach(q => {
+    const d = document.createElement('div');
+    d.className = 'faq-chip'; d.textContent = q;
+    d.onclick = () => ask(q); sc.appendChild(d);
+  });
+}
+
+function buildQuickChips() {
+  const lines = cfg.faq.split('\n').filter(l => l.startsWith('Q:'));
+  const qs = lines.map(l => l.replace('Q:', '').trim()).slice(0, 4);
+  const qc = document.getElementById('quick-chips');
+  if (!qc) return;
+  qc.innerHTML = '';
+  qs.forEach(q => {
+    const b = document.createElement('button');
+    b.className = 'q-chip'; b.textContent = q;
+    b.onclick = () => ask(q); qc.appendChild(b);
+  });
+}
+
+// SPEECH RECOGNITION
+function setupRecog() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('no-voice').style.display = 'block'; return; }
+  recog = new SR();
+  recog.continuous = false; recog.interimResults = true; recog.lang = 'en-US';
+  recog.onstart = () => {
+    listening = true;
+    setStatus('listen', '🔴 Listening...', 'Speak clearly');
+    document.getElementById('mic').classList.add('on');
+    document.getElementById('mic-icon').textContent = '⏹';
+  };
+  recog.onresult = e => {
+    let interim = '', final = '';
+    for (let r of e.results) { if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; }
+    document.getElementById('v-live').textContent = interim || final;
+    if (final) { stopMic(); ask(final.trim()); }
+  };
+  recog.onerror = () => { stopMic(); setStatus('idle', 'Tap mic to speak', 'Try again'); };
+  recog.onend = () => { if (listening) stopMic(); };
+}
+
+function toggleMic() { if (!recog) return; if (listening) stopMic(); else startMic(); }
+function startMic() { if (!recog || listening) return; window.speechSynthesis.cancel(); document.getElementById('v-live').textContent = ''; recog.start(); }
+function stopMic() {
+  listening = false;
+  if (recog) { try { recog.stop(); } catch(e) {} }
+  document.getElementById('mic').classList.remove('on');
+  document.getElementById('mic-icon').textContent = '🎤';
+  setStatus('idle', 'Tap mic to speak', 'Or type your question below');
+  document.getElementById('v-live').textContent = '';
+}
+
+// SEND
+function send() { const i = document.getElementById('text-inp'); const t = i.value.trim(); if (!t) return; i.value = ''; ask(t); }
+function ask(text) { hideWelcome(); addMsg('user', text); msgs++; updateStats(); getReply(text); }
+
+// API CALL
+async function getReply(text) {
+  const tid = addTyping();
+  setStatus('think', 'Thinking...', 'AI is processing your question');
+
+  const systemMsg = {
+    role: 'system',
+    content: `You are a helpful customer support AI for ${cfg.company}.\n\nKnowledge base:\n${cfg.faq}\n\nRules: Keep replies under 3 sentences. Only use info from the knowledge base. If unsure, say you will connect them with the team.`
+  };
+
+  history.push({ role: 'user', content: text });
+  if (history.length > 10) history = history.slice(-10);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [systemMsg, ...history] })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'API error');
+
+    const reply = data.choices[0].message.content.trim();
+    history.push({ role: 'assistant', content: reply });
+
+    removeTyping(tid);
+    addMsg('agent', reply);
+    msgs++; updateStats();
+    setStatus('idle', 'Tap mic to speak', 'Or type your question below');
+    if (cfg.tts) speak(reply);
+
+  } catch (err) {
+    removeTyping(tid);
+    addMsg('agent', 'Sorry, something went wrong. Please try again.');
+    setStatus('idle', 'Tap mic to speak', 'Error — check Vercel logs');
+    console.error(err);
+  }
+}
+
+// TTS
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[*_#`]/g, ''));
+  u.rate = 1.05; u.pitch = 1; u.volume = 1;
+  const vs = window.speechSynthesis.getVoices();
+  const pv = vs.find(v => v.name.includes('Google') && v.lang.startsWith('en'));
+  if (pv) u.voice = pv;
+  u.onstart = () => { document.getElementById('mic').classList.add('speak'); document.getElementById('mic-icon').textContent = '🔊'; setStatus('speak', 'Speaking...', 'Agent is responding'); };
+  u.onend = () => { document.getElementById('mic').classList.remove('speak'); document.getElementById('mic-icon').textContent = '🎤'; setStatus('idle', 'Tap mic to speak', 'Or type your question below'); };
+  window.speechSynthesis.speak(u);
+}
+
+function toggleTTS() {
+  cfg.tts = !cfg.tts;
+  document.getElementById('tts-toggle').classList.toggle('off', !cfg.tts);
+  if (!cfg.tts) window.speechSynthesis.cancel();
+}
+
+// MESSAGES
+function addMsg(role, text) {
+  const ca = document.getElementById('chat');
+  const d = document.createElement('div'); d.className = 'msg ' + role;
+  const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  d.innerHTML = `<div class="msg-av">${role === 'agent' ? '🤖' : '👤'}</div><div><div class="msg-bub">${esc(text)}</div><div class="msg-time">${t}</div></div>`;
+  ca.appendChild(d); ca.scrollTop = ca.scrollHeight;
+}
+
+function addTyping() {
+  const ca = document.getElementById('chat'); const id = 't' + Date.now();
+  const d = document.createElement('div'); d.className = 'msg agent'; d.id = id;
+  d.innerHTML = '<div class="msg-av">🤖</div><div><div class="msg-bub"><div class="dots"><span></span><span></span><span></span></div></div></div>';
+  ca.appendChild(d); ca.scrollTop = ca.scrollHeight; return id;
+}
+
+function removeTyping(id) { const e = document.getElementById(id); if (e) e.remove(); }
+function hideWelcome() { const w = document.querySelector('.welcome'); if (w) w.remove(); }
+
+function setStatus(t, main, hint) {
+  const b = document.getElementById('badge');
+  b.className = 'status-badge s-' + t;
+  b.textContent = { idle: 'Ready', listen: 'Listening', think: 'Thinking', speak: 'Speaking' }[t];
+  document.getElementById('v-status').textContent = main;
+  document.getElementById('v-hint').textContent = hint;
+}
+
+function updateStats() { document.getElementById('stat-msgs').textContent = msgs; }
+function startTimer() {
+  startTime = Date.now(); clearInterval(timer);
+  timer = setInterval(() => { document.getElementById('stat-time').textContent = Math.floor((Date.now() - startTime) / 60000) + 'm'; }, 15000);
+}
+function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// LOAD SAVED
+window.addEventListener('load', () => {
+  try { const s = localStorage.getItem('vd'); if (s) { const c = JSON.parse(s); document.getElementById('inp-company').value = c.company || ''; document.getElementById('inp-faq').value = c.faq || ''; } } catch(e) {}
+  window.speechSynthesis.getVoices();
+});
+</script>
+</body>
+</html>
